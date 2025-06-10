@@ -8,3 +8,4 @@ cmake \
 -DCMAKE_C_COMPILER_WORKS=1 \
 -DCMAKE_CXX_COMPILER_WORKS=1 \
 -DWEB_ASM=ON -S ./ -B ./bin -G Ninja
+./wasm-build.sh

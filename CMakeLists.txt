@@ -11,6 +11,8 @@ endif()
 
 set(CMAKE_CXX_STANDARD 20)
 
+set(NO_NETWORKING 1)
+
 if (WEB_ASM)
     add_definitions(-DWEB_ASM)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
