@@ -121,6 +121,8 @@
   preventKeyEventScroll("keyup", keys);
   preventKeyEventScroll("keypress", keys);
 
+  let nsEngine_OnActivateApp = null;
+
   var Module = {
     print(...args) {
       console.log(...args);
@@ -144,6 +146,9 @@
       const loader = document.getElementById("loaderScreen");
       document.body.removeChild(loader);
       window.onresize = onResize;
+
+      nsEngine_OnActivateApp = Module.cwrap("nsEngine_OnActivateApp", "void", ["boolean"]);
+
       onResize();
     },
     canvas: canvasElement,
@@ -154,10 +159,18 @@
   };
 
   function onResize() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const scale = window.devicePixelRatio || 1;
+    const w = window.innerWidth * scale;
+    const h = window.innerHeight * scale;
     console.log("onResize", w, h);
     Module.setCanvasSize(w, h);
+
+    const canv = Module.canvas;
+    canv.style.scale = "" + 1 / scale;
+    const ox = (window.innerWidth - w) / 2;
+    const oy = (window.innerHeight - h) / 2;
+    canv.style.left = ox + "px";
+    canv.style.top = oy + "px";
   }
 
   function setProgress(value) {
@@ -185,6 +198,21 @@
 
   setProgress(0);
   logEvent("template", "open-page");
+
+  window.addEventListener("blur", ()=> {
+    console.log("focus out");
+    if (nsEngine_OnActivateApp) {
+      nsEngine_OnActivateApp(false);
+    }
+  });
+
+  window.addEventListener("focus", ()=> {
+    console.log("focus in");
+    if (nsEngine_OnActivateApp) {
+      nsEngine_OnActivateApp(true);
+    }
+  });
+
 </script>
 {{{ SCRIPT }}}
 </body>
