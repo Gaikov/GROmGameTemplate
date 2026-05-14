@@ -8,12 +8,12 @@
 #include "Engine/display/VisualSceneRender2d.h"
 #include "Engine/RenManager.h"
 #include "Engine/Input.h"
-#include "Engine/display/Sprite.h"
+#include "Engine/display/sprite/Sprite.h"
 #include "Engine/display/text/TextLabel.h"
 #include "Engine/utils/AppUtils.h"
 #include "Engine/display/particles/VisualParticles.h"
 #include "Engine/renderer/font/FontsCache.h"
-#include "Engine/renderer/particles/ParticlesManager.h"
+#include "Engine/renderer/particles/factory/ParticlesManager.h"
 #include "Engine/renderer/particles/ParticleSystem.h"
 
 bool nsGameTemplate::Init() {

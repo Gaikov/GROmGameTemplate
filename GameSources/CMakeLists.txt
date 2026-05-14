@@ -19,6 +19,17 @@ elseif (WEB_ASM)
 else()
     add_executable(${GAME_MODULE_NAME} ${sources})
     target_link_libraries(${GAME_MODULE_NAME} ${GROM_ENGINE_LIBS})
+
+    if (APPLE)
+        add_custom_command(TARGET ${GAME_MODULE_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_SOURCE_DIR}/assets/libEGL.dylib"
+                "$<TARGET_FILE_DIR:${GAME_MODULE_NAME}>/libEGL.dylib"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_SOURCE_DIR}/assets/libGLESv2.dylib"
+                "$<TARGET_FILE_DIR:${GAME_MODULE_NAME}>/libGLESv2.dylib"
+        )
+    endif ()
 endif ()
 
 include_directories(./)

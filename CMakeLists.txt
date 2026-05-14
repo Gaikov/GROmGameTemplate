@@ -16,7 +16,7 @@ set(NO_NETWORKING 1)
 if (WEB_ASM)
     add_definitions(-DWEB_ASM)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
-else ()
+elseif (NOT APPLE)
     set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++")
 endif ()
 
