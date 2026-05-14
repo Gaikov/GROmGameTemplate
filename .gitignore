@@ -1,4 +1,10 @@
+/.idea/
 /cmake-build-debug/
 /cmake-build-debug-external-mingw/
 /cmake-build-release-external-mingw/
 /bin/
+/assets/*.log
+/assets/*.cfg
+/assets/libEGL.dylib
+/assets/libGLESv2.dylib
+.DS_Store
