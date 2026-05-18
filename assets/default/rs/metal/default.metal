@@ -19,8 +19,10 @@ struct Uniforms {
     float4x4 uProjView;
     float4x4 uModel;
     float4x4 uTexMat;
+    float4   uColor;
     float   uAlphaCutoff;
     int     uHasTexture;
+    int     uHasVertexColor;
 };
 
 vertex VertexOut vertexMain(VertexIn in        [[stage_in]],
@@ -29,7 +31,7 @@ vertex VertexOut vertexMain(VertexIn in        [[stage_in]],
     VertexOut out;
     out.pos = u.uProjView * u.uModel * float4(in.aPosition, 1.0);
     out.vNormal = in.aNormal;
-    out.vColor = in.aColor;
+    out.vColor = u.uHasVertexColor != 0 ? in.aColor : u.uColor;
     out.vTexCoord = in.aTexCoord;
     return out;
 }
