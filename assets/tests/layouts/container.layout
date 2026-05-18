@@ -11,7 +11,7 @@ $container {
         $label {
             $font "tests/fonts/bmfont.fnt"
             $text "Hello from GROm!"
-            $renState "default/rs/gui.txt"
+            $renState "default/rs/gui.ggrs"
             $y 200
         }
 

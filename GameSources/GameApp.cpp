@@ -8,6 +8,7 @@
 #include "Engine/display/VisualSceneRender2d.h"
 #include "Engine/RenManager.h"
 #include "Engine/Input.h"
+#include "Engine/TimeFormat.h"
 #include "Engine/display/sprite/Sprite.h"
 #include "Engine/display/text/TextLabel.h"
 #include "Engine/utils/AppUtils.h"
@@ -19,8 +20,21 @@
 bool nsGameTemplate::Init() {
     _device = nsRenDevice::Shared()->Device();
 
+    _testTri = _device->VerticesCreate(3, 3, false, true);
+    auto verts = _testTri->GetWriteVertices();
+    verts[0].v = nsVec3( 0.0f,  0.6f, 0);
+    verts[1].v = nsVec3(-0.5f, -0.4f, 0);
+    verts[2].v = nsVec3( 0.5f, -0.4f, 0);
+    verts[0].c = 0xff0000ff;
+    verts[1].c = 0xff00ff00;
+    verts[2].c = 0xffff0000;
+    auto indices = _testTri->GetWriteIndices();
+    indices[0] = 0; indices[1] = 1; indices[2] = 2;
+    _testTri->SetValidVertices(3);
+    _testTri->SetValidIndices(3);
+
     _stage = new nsVisualContainer2d();
-    auto renState = _device->StateLoad("default/rs/gui_clamp.txt");
+    auto renState = _device->StateLoad("default/rs/gui_clamp.ggrs");
 
     auto back = _device->TextureLoad("grom-logo.png");
     auto sprite = new nsSprite();
@@ -72,6 +86,10 @@ bool nsGameTemplate::Init() {
 }
 
 void nsGameTemplate::Release() {
+    if (_testTri) {
+        _device->VerticesRelease(_testTri);
+        _testTri = nullptr;
+    }
     if (_stage) {
         _stage->Destroy();
     }
@@ -83,6 +101,18 @@ void nsGameTemplate::DrawWorld() {
     _stage->origin.pos = nsAppUtils::GetClientSize() / 2;
 
     nsVisualSceneRender2d::DrawScene(_stage);
+
+    static float testAngle = 0;
+    testAngle += 0.03f;
+    nsMatrix proj, view, model;
+    proj.Identity();
+    view.Identity();
+    model.Identity();
+    model.RotateZ(testAngle);
+    _device->LoadProjMatrix(proj);
+    _device->LoadViewMartix(view);
+    _device->LoadMatrix(model);
+    _device->VerticesDraw(_testTri);
 }
 
 void nsGameTemplate::Loop(float frameTime) {

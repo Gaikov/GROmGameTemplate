@@ -46,5 +46,5 @@ $updaters {
 $renderer {
     $name "round"
     $texture "tests/particle.jpg"
-    $renState "default/rs/gui_add.txt"
+    $renState "default/rs/gui_add.ggrs"
 }

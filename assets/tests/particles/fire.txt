@@ -70,5 +70,5 @@ $updaters {
 $renderer {
     $name "round"
     $texture "tests/fire.jpg"
-    $renState "default/rs/gui_add.txt"
+    $renState "default/rs/gui_add.ggrs"
 }

@@ -1,6 +1,6 @@
 $sprite {
     $texture "tests/background.jpg"
-    $renState "default/rs/gui.txt"
+    $renState "default/rs/gui.ggrs"
 
     $x 200
     $y 200

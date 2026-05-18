@@ -63,5 +63,5 @@ $renderer {
     $borderColor 1 0.3 0 1
     $borderSize 10
 
-    $renState "default/rs/parts_blend.txt"
+    $renState "default/rs/parts_blend.ggrs"
 }

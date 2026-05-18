@@ -81,5 +81,5 @@ $renderer {
     $name "round"
     $texture "tests/star_white.png"
 
-    $renState "default/rs/parts_add.txt"
+    $renState "default/rs/parts_add.ggrs"
 }

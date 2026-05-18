@@ -33,7 +33,7 @@ $group {
                     $children {
                         $sprite {
                             $id "background"
-                            $renState "default/rs/gui.txt"
+                            $renState "default/rs/gui.ggrs"
                             $size 10000 10000
                             $pivot 5000 5000
                             $color 0.1 0.1 0.1 1

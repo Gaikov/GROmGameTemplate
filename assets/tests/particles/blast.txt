@@ -57,5 +57,5 @@ $renderer {
     $borderColor 0.4 0.6 0.7 1
     $borderSize 6
 
-    $renState "default/rs/gui.txt"
+    $renState "default/rs/gui.ggrs"
 }
