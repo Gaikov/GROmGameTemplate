@@ -1,0 +1,10 @@
+$shade_mode "flat"
+$z_enable 0
+$z_write 0
+$alpha_test 0
+$alpha_ref 0
+$blend_src "src_alpha"
+$blend_dst "inv_src_alpha"
+$cull_mode 0
+$tex_coord_u "wrap"
+$tex_coord_v "wrap"

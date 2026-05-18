@@ -1,0 +1,10 @@
+$enabled 1
+
+$op_fail "keep"
+$op_zfail "keep"
+$op_zpass "keep"
+
+$func "equal"
+$func_mask 255
+
+$stencil_mask 255

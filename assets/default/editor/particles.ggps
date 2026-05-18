@@ -1,0 +1,53 @@
+$amountPerSecond 50
+
+$spawners {
+    $circle {
+        $radius 20
+    }
+
+    $life {
+        $minTime 0.4
+        $maxTime 0.3
+    }
+
+    $size {
+        $minSize 40
+        $maxSize 60
+    }
+
+    $radialVel {
+        $minSpeed 50
+        $maxSpeed 500
+    }
+}
+
+$updaters {
+
+    $velApply {
+    }
+
+    $velAngle {
+    }
+
+    $sizeTimeline {
+        $frame {
+            $time 0
+            $scale 0
+        }
+
+        $frame {
+            $time 0.05
+            $scale 1
+        }
+
+        $frame {
+            $time 0.95
+            $scale 0
+        }
+    }
+}
+
+$renderer {
+    $name "round"
+    $renState "default/rs/gui_clamp_add.ggrs"
+}
