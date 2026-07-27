@@ -27,12 +27,17 @@ void handle_cmd(android_app *pApp, int32_t cmd) {
     JavaObject::sp_t activity;
 
     switch (cmd) {
-        case APP_CMD_INIT_WINDOW:
+        case APP_CMD_INIT_WINDOW: {
             // A new window is created, associate a renderer with it. You may replace this with a
             // "game" class if that suits your needs. Remember to change all instances of userData
             // if you change the class here as a reinterpret_cast is dangerous this in the
             // android_main function and the APP_CMD_TERM_WINDOW handler case.
-            pApp->userData = new Renderer(pApp);
+            auto renderer = new Renderer(pApp);
+            if (!renderer->IsInitialized()) {
+                delete renderer;
+                break;
+            }
+            pApp->userData = renderer;
 
             if (!g_started) {
                 g_started = true;
@@ -45,6 +50,7 @@ void handle_cmd(android_app *pApp, int32_t cmd) {
             platform->_activity = activity;
 
             break;
+        }
         case APP_CMD_TERM_WINDOW:
             // The window is being destroyed. Use this to clean up your userData to avoid leaking
             // resources.
@@ -110,7 +116,7 @@ void android_main(struct android_app *pApp) {
     android_poll_source *pSource;
     do {
         // Process all pending events before running game logic.
-        if (ALooper_pollAll(0, nullptr, &events, (void **) &pSource) >= 0) {
+        while (ALooper_pollOnce(0, nullptr, &events, (void **) &pSource) >= 0) {
             if (pSource) {
                 pSource->process(pApp, pSource);
             }

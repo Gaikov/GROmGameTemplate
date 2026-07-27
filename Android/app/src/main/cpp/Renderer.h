@@ -15,6 +15,8 @@ public:
     Renderer(android_app *pApp);
     virtual ~Renderer();
 
+    bool IsInitialized() const { return _initialized; }
+
     /*!
      * Handles input from the android_app.
      *
@@ -32,7 +34,7 @@ private:
      * Performs necessary OpenGL initialization. Customize this if you want to change your EGL
      * context or application-wide settings.
      */
-    void initRenderer();
+    bool initRenderer();
 
     /*!
      * Creates the models for this sample. You'd likely load a scene configuration from a file or
@@ -43,6 +45,7 @@ private:
     android_app *app_;
 
     AndroidPlatform *_platform;
+    bool _initialized = false;
 };
 
 #endif //ANDROIDGLINVESTIGATIONS_RENDERER_H

@@ -1,7 +1,6 @@
 #include "Renderer.h"
 
 #include <game-activity/native_app_glue/android_native_app_glue.h>
-#include <GLES/gl.h>
 #include <memory>
 #include <vector>
 #include <android/imagedecoder.h>
@@ -10,11 +9,24 @@
 #include "Engine/engine.h"
 #include "Platform/AndroidPlatform/AndroidPlatform.h"
 
+namespace {
+int GetEngineModifiers(int32_t metaState) {
+    int modifiers = 0;
+    if (metaState & AMETA_SHIFT_ON) modifiers |= 0x0001;
+    if (metaState & AMETA_CTRL_ON) modifiers |= 0x0002;
+    if (metaState & AMETA_ALT_ON) modifiers |= 0x0004;
+    if (metaState & AMETA_META_ON) modifiers |= 0x0008;
+    if (metaState & AMETA_CAPS_LOCK_ON) modifiers |= 0x0010;
+    if (metaState & AMETA_NUM_LOCK_ON) modifiers |= 0x0020;
+    return modifiers;
+}
+}
+
 Renderer::Renderer(android_app *pApp) :
         app_(pApp),
         _context(pApp->window) {
     _platform = dynamic_cast<AndroidPlatform *>(App_GetPlatform());
-    initRenderer();
+    _initialized = initRenderer();
 }
 
 Renderer::~Renderer() {
@@ -22,13 +34,20 @@ Renderer::~Renderer() {
     _context.Release();
 }
 
-void Renderer::initRenderer() {
-    _context.Init();
+bool Renderer::initRenderer() {
+    if (!_context.Init()) {
+        Log::Error("Failed to initialize the OpenGL ES 3 renderer");
+        return false;
+    }
     _platform->SetGLContext(&_context);
     _platform->SetScreenSize(_context.GetSurfaceWidth(), _context.GetSurfaceHeight());
+    return true;
 }
 
 void Renderer::render() {
+    if (!_initialized) {
+        return;
+    }
     _platform->SetScreenSize(_context.GetSurfaceWidth(), _context.GetSurfaceHeight());
     _context.BeginRender();
     nsEngine::MainLoop();
@@ -99,18 +118,19 @@ void Renderer::handleInput() {
     // handle input key events.
     for (auto i = 0; i < inputBuffer->keyEventsCount; i++) {
         auto &keyEvent = inputBuffer->keyEvents[i];
+        const int modifiers = GetEngineModifiers(keyEvent.metaState);
         //Log::Info("Key: %i ", keyEvent.keyCode);
         switch (keyEvent.action) {
             case AKEY_EVENT_ACTION_DOWN:
                 _platform->GetKeyboard()->SetKeyPressed(keyEvent.keyCode, true);
-                nsEngine::OnKeyDown(keyEvent.keyCode, keyEvent.repeatCount != 0);
+                nsEngine::OnKeyDown(keyEvent.keyCode, keyEvent.repeatCount != 0, modifiers);
                 if (keyEvent.unicodeChar && keyEvent.unicodeChar < 256) {
                     nsEngine::OnCharDown(keyEvent.unicodeChar);
                 }
                 break;
             case AKEY_EVENT_ACTION_UP:
                 _platform->GetKeyboard()->SetKeyPressed(keyEvent.keyCode, false);
-                nsEngine::OnKeyUp(keyEvent.keyCode);
+                nsEngine::OnKeyUp(keyEvent.keyCode, modifiers);
                 break;
             case AKEY_EVENT_ACTION_MULTIPLE:
                 // Deprecated since Android API level 29.
