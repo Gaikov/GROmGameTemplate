@@ -2,6 +2,7 @@
 #define ANDROIDGLINVESTIGATIONS_RENDERER_H
 
 #include <memory>
+#include <unordered_map>
 #include "Platform/AndroidPlatform/AndroidPlatform.h"
 #include "Platform/AndroidPlatform/GLNativeContext.h"
 
@@ -27,7 +28,8 @@ public:
     /*!
      * Renders all the models in the renderer
      */
-    void render();
+    bool render();
+    void refreshSurfaceSize();
 
 private:
     /*!
@@ -46,6 +48,7 @@ private:
 
     AndroidPlatform *_platform;
     bool _initialized = false;
+    std::unordered_map<int32_t, std::pair<float, float>> _activePointers;
 };
 
 #endif //ANDROIDGLINVESTIGATIONS_RENDERER_H

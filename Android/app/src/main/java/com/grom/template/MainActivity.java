@@ -4,10 +4,12 @@ import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.google.androidgamesdk.GameActivity;
 
@@ -22,6 +24,8 @@ public class MainActivity extends GameActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        WindowCompat.enableEdgeToEdge(getWindow());
+        hideSystemUi();
     }
 
     @Override
@@ -33,15 +37,17 @@ public class MainActivity extends GameActivity {
         return false;
     }
 
-    public void messageBox(String msg) {
-        AlertDialog.Builder dlgAlert = new AlertDialog.Builder(this);
-        dlgAlert.setMessage(msg);
-        dlgAlert.setTitle(getResources().getString(R.string.app_name));
-        dlgAlert.setPositiveButton("OK", (dialog, which) -> {
-
+    public void messageBox(String caption, String message) {
+        runOnUiThread(() -> {
+            AlertDialog.Builder dlgAlert = new AlertDialog.Builder(this);
+            dlgAlert.setMessage(message);
+            dlgAlert.setTitle(caption == null || caption.isEmpty()
+                    ? getString(R.string.app_name)
+                    : caption);
+            dlgAlert.setPositiveButton(android.R.string.ok, null);
+            dlgAlert.setCancelable(true);
+            dlgAlert.show();
         });
-        dlgAlert.setCancelable(true);
-        dlgAlert.create().show();
     }
 
     @Override
@@ -54,15 +60,11 @@ public class MainActivity extends GameActivity {
     }
 
     private void hideSystemUi() {
-        View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_FULLSCREEN
-        );
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        controller.setSystemBarsBehavior(
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        controller.hide(WindowInsetsCompat.Type.systemBars());
     }
 
     public void openUrl(String url) {

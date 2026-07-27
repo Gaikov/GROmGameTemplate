@@ -3,7 +3,6 @@
 #include <game-activity/native_app_glue/android_native_app_glue.h>
 #include <memory>
 #include <vector>
-#include <android/imagedecoder.h>
 
 #include "Platform/AndroidPlatform/AndroidLogPolicy.h"
 #include "Engine/engine.h"
@@ -44,13 +43,25 @@ bool Renderer::initRenderer() {
     return true;
 }
 
-void Renderer::render() {
+bool Renderer::render() {
     if (!_initialized) {
-        return;
+        return false;
     }
-    _platform->SetScreenSize(_context.GetSurfaceWidth(), _context.GetSurfaceHeight());
+    refreshSurfaceSize();
+    if (_context.NeedsRecreation()) {
+        return false;
+    }
     _context.BeginRender();
     nsEngine::MainLoop();
+    return !_context.NeedsRecreation();
+}
+
+void Renderer::refreshSurfaceSize() {
+    const EGLint width = _context.GetSurfaceWidth();
+    const EGLint height = _context.GetSurfaceHeight();
+    if (width > 0 && height > 0) {
+        _platform->SetScreenSize(width, height);
+    }
 }
 
 void Renderer::handleInput() {
@@ -66,50 +77,62 @@ void Renderer::handleInput() {
         auto &motionEvent = inputBuffer->motionEvents[i];
         auto action = motionEvent.action;
 
-        // Find the pointer index, mask and bitshift to turn it into a readable value.
-        auto pointerIndex = (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK)
+        const int actionMasked = action & AMOTION_EVENT_ACTION_MASK;
+        const uint32_t pointerIndex =
+                (action & AMOTION_EVENT_ACTION_POINTER_INDEX_MASK)
                 >> AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT;
-        //Log::Info("Pointer(s): ");
 
-        // get the x and y position of this event if it is not ACTION_MOVE.
-        auto &pointer = motionEvent.pointers[pointerIndex];
-        auto x = GameActivityPointerAxes_getX(&pointer);
-        auto y = GameActivityPointerAxes_getY(&pointer);
-
-        // determine the action type and process the event accordingly.
-        switch (action & AMOTION_EVENT_ACTION_MASK) {
+        switch (actionMasked) {
             case AMOTION_EVENT_ACTION_DOWN:
-            case AMOTION_EVENT_ACTION_POINTER_DOWN:
-                //Log::Info("Pointer Down: (%i, %fx%f)", pointer.id, x, y);
+            case AMOTION_EVENT_ACTION_POINTER_DOWN: {
+                if (pointerIndex >= motionEvent.pointerCount) {
+                    Log::Warning("Invalid pointer down index: %u/%u",
+                                 pointerIndex, motionEvent.pointerCount);
+                    break;
+                }
+                const auto &pointer = motionEvent.pointers[pointerIndex];
+                const float x = GameActivityPointerAxes_getX(&pointer);
+                const float y = GameActivityPointerAxes_getY(&pointer);
+                _activePointers[pointer.id] = {x, y};
                 nsEngine::OnPointerDown(pointer.id, x, y);
                 break;
+            }
 
-            case AMOTION_EVENT_ACTION_CANCEL:
-                // treat the CANCEL as an UP event: doing nothing in the app, except
-                // removing the pointer from the cache if pointers are locally saved.
-                // code pass through on purpose.
             case AMOTION_EVENT_ACTION_UP:
-            case AMOTION_EVENT_ACTION_POINTER_UP:
-                //Log::Info("Pointer Up: (%i, %fx%f)", pointer.id, x, y);
+            case AMOTION_EVENT_ACTION_POINTER_UP: {
+                if (pointerIndex >= motionEvent.pointerCount) {
+                    Log::Warning("Invalid pointer up index: %u/%u",
+                                 pointerIndex, motionEvent.pointerCount);
+                    break;
+                }
+                const auto &pointer = motionEvent.pointers[pointerIndex];
+                const float x = GameActivityPointerAxes_getX(&pointer);
+                const float y = GameActivityPointerAxes_getY(&pointer);
                 nsEngine::OnPointerUp(pointer.id, x, y);
+                _activePointers.erase(pointer.id);
                 break;
+            }
 
-            case AMOTION_EVENT_ACTION_MOVE:
-                // There is no pointer index for ACTION_MOVE, only a snapshot of
-                // all active pointers; app needs to cache previous active pointers
-                // to figure out which ones are actually moved.
-                //Log::Info("=== Pointer Move ===");
-                for (auto index = 0; index < motionEvent.pointerCount; index++) {
-                    pointer = motionEvent.pointers[index];
-                    x = GameActivityPointerAxes_getX(&pointer);
-                    y = GameActivityPointerAxes_getY(&pointer);
-                    //Log::Info("Pointer Move: (%i, %fx%f)", pointer.id, x, y);
+            case AMOTION_EVENT_ACTION_MOVE: {
+                for (uint32_t index = 0; index < motionEvent.pointerCount; index++) {
+                    const auto &pointer = motionEvent.pointers[index];
+                    const float x = GameActivityPointerAxes_getX(&pointer);
+                    const float y = GameActivityPointerAxes_getY(&pointer);
+                    _activePointers[pointer.id] = {x, y};
                     nsEngine::OnPointerMove(pointer.id, x, y);
                 }
-
                 break;
+            }
+
+            case AMOTION_EVENT_ACTION_CANCEL:
+                for (const auto &[pointerId, position] : _activePointers) {
+                    nsEngine::OnPointerUp(pointerId, position.first, position.second);
+                }
+                _activePointers.clear();
+                break;
+
             default:
-                Log::Info("Unknown MotionEvent Action: ");
+                break;
         }
     }
     // clear the motion input count in this buffer for main thread to re-use.
