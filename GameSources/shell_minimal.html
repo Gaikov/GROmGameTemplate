@@ -160,17 +160,19 @@
 
   function onResize() {
     const scale = window.devicePixelRatio || 1;
-    const w = window.innerWidth * scale;
-    const h = window.innerHeight * scale;
+    const cssWidth = window.innerWidth;
+    const cssHeight = window.innerHeight;
+    const w = Math.max(1, Math.round(cssWidth * scale));
+    const h = Math.max(1, Math.round(cssHeight * scale));
     console.log("onResize", w, h);
-    Module.setCanvasSize(w, h);
 
     const canv = Module.canvas;
-    canv.style.scale = "" + 1 / scale;
-    const ox = (window.innerWidth - w) / 2;
-    const oy = (window.innerHeight - h) / 2;
-    canv.style.left = ox + "px";
-    canv.style.top = oy + "px";
+    canv.width = w;
+    canv.height = h;
+    canv.style.width = cssWidth + "px";
+    canv.style.height = cssHeight + "px";
+    canv.style.left = "0";
+    canv.style.top = "0";
   }
 
   function setProgress(value) {
@@ -197,6 +199,7 @@
   }
 
   setProgress(0);
+  onResize();
   logEvent("template", "open-page");
 
   window.addEventListener("blur", ()=> {

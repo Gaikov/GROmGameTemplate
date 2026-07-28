@@ -1,3 +1,7 @@
-rm bin -r -f
-cmake -DCMAKE_C_COMPILER=emcc -DCMAKE_CXX_COMPILER=em++ -DWEB_ASM=ON -S ./ -B ./bin
-cmake --build ./bin -j$(nproc)
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+"$ROOT_DIR/wasm-prepare.sh"
