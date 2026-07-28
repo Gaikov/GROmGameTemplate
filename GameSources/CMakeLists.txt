@@ -12,11 +12,12 @@ elseif (WEB_ASM)
     add_executable(${GAME_MODULE_NAME} ${sources})
     set_target_properties(${GAME_MODULE_NAME} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+            LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/shell_minimal.html"
     )
 
     target_link_options(${GAME_MODULE_NAME} PRIVATE
             -O3
-            "-sEXPORTED_FUNCTIONS=['_nsEngine_OnActivateApp','_main']"
+            "-sEXPORTED_FUNCTIONS=['_nsEngine_OnActivateApp','_nsEngine_OnKeyDown','_nsEngine_OnKeyUp','_nsEngine_OnCharDown','_main']"
             "-sEXPORTED_RUNTIME_METHODS=['cwrap']"
             -sALLOW_MEMORY_GROWTH=1
             -sSTACK_SIZE=500000
