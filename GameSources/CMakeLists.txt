@@ -19,6 +19,7 @@ elseif (WEB_ASM)
             -O3
             "-sEXPORTED_FUNCTIONS=['_nsEngine_OnActivateApp','_nsEngine_OnKeyDown','_nsEngine_OnKeyUp','_nsEngine_OnCharDown','_main']"
             "-sEXPORTED_RUNTIME_METHODS=['cwrap']"
+            "-sINCOMING_MODULE_JS_API=ENVIRONMENT,arguments,canvas,dynamicLibraries,elementPointerLock,instantiateWasm,locateFile,monitorRunDependencies,noExitRuntime,noInitialRun,onAbort,onExit,onRuntimeInitialized,postRun,preInit,preRun,print,printErr,setStatus,statusMessage,stderr,stdin,stdout,thisProgram,wasm,websocket,preMainLoop"
             -sALLOW_MEMORY_GROWTH=1
             -sSTACK_SIZE=500000
             -sUSE_GLFW=3
