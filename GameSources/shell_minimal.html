@@ -272,13 +272,13 @@
       const loader = document.getElementById("loaderScreen");
       document.body.removeChild(loader);
       installResizeHandlers();
+      onResize();
 
       nsEngine_OnActivateApp = Module.cwrap("nsEngine_OnActivateApp", "void", ["boolean"]);
       nsEngine_OnKeyDown = Module.cwrap("nsEngine_OnKeyDown", "void", ["number", "boolean", "number"]);
       nsEngine_OnKeyUp = Module.cwrap("nsEngine_OnKeyUp", "void", ["number", "number"]);
       nsEngine_OnCharDown = Module.cwrap("nsEngine_OnCharDown", "void", ["number"]);
 
-      requestResize();
       focusCanvas();
     },
     preMainLoop: checkResize,
@@ -313,24 +313,11 @@
   }
 
   function onResize() {
-    const scale = window.devicePixelRatio || 1;
-    currentPixelRatio = scale;
-    const cssWidth = window.innerWidth;
-    const cssHeight = window.innerHeight;
-    const w = Math.max(1, Math.round(cssWidth * scale));
-    const h = Math.max(1, Math.round(cssHeight * scale));
+    currentPixelRatio = window.devicePixelRatio || 1;
+    const w = Math.max(1, window.innerWidth);
+    const h = Math.max(1, window.innerHeight);
     console.log("onResize", w, h);
-
-    const canv = Module.canvas;
-    if (canv.width !== w) canv.width = w;
-    if (canv.height !== h) canv.height = h;
-
-    const cssWidthValue = cssWidth + "px";
-    const cssHeightValue = cssHeight + "px";
-    if (canv.style.width !== cssWidthValue) canv.style.width = cssWidthValue;
-    if (canv.style.height !== cssHeightValue) canv.style.height = cssHeightValue;
-    if (canv.style.left !== "0px") canv.style.left = "0";
-    if (canv.style.top !== "0px") canv.style.top = "0";
+    Module.setCanvasSize(w, h);
   }
 
   function setProgress(value) {
@@ -357,7 +344,6 @@
   }
 
   setProgress(0);
-  onResize();
   logEvent("template", "open-page");
 
   window.addEventListener("blur", ()=> {
