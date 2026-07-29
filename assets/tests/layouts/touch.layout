@@ -1,0 +1,30 @@
+$container
+{
+	$children
+	{
+		$sprite
+		{
+			$id "sprite"
+			$texture "tests/smoke.png"
+			$pivot 50.000000 50.000000
+			$size 100.000000 100.000000
+			$premultiplyAlpha 1
+			$renState "default/rs/sprite_pma.ggrs"
+		}
+
+		$label
+		{
+			$id "label"
+			$y -31.405655
+			$sx 2.000000
+			$sy 2.000000
+			$font "default/sys-font.fnt"
+			$renState "default/rs/gui.ggrs"
+			$text "001"
+			$color 0.000000 0.000000 0.000000 1.000000
+			$hAlign "center"
+		}
+
+	}
+
+}

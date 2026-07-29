@@ -5,14 +5,13 @@
 //--------------------------------------------------------------------------------------------------
 #pragma once
 
-#include "Engine/display/container/VisualContainer2d.h"
-#include "Engine/GameApp.h"
-#include "Engine/RenDevice.h"
+#include "Engine/BaseGame2DApp.h"
 
-class nsGameTemplate : public IGameApp {
-    nsVisualContainer2d *_stage = nullptr;
-    IRenDevice *_device = nullptr;
-    IVertexBuffer *_testTri = nullptr;
+class nsTouchesContainer;
+
+class nsGameTemplate : public nsBaseGame2DApp {
+    nsVisualContainer2d *_content = nullptr;
+    nsTouchesContainer *_touches = nullptr;
 
     bool Init() override;
     void Release() override;
@@ -24,7 +23,5 @@ class nsGameTemplate : public IGameApp {
 
     bool InitDialog() override;
     int GetWindowIcon() override;
-    IUserInput *GetUserInput() override;
-    void GetGUIDimension(int &width, int &height) override;
     const char *GetVersionInfo() override;
 };

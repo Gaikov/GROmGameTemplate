@@ -3,6 +3,8 @@ project(GameTemplate)
 set(sources
         GameApp.cpp
         GameAppInfo.cpp
+        TouchesContainer.cpp
+        TouchesContainer.h
 )
 
 if (ANDROID)

@@ -5,38 +5,29 @@
 #include "GameApp.h"
 #include "Engine/SndManager.h"
 #include "Engine/Platform.h"
-#include "Engine/display/VisualSceneRender2d.h"
-#include "Engine/RenManager.h"
 #include "Engine/Input.h"
-#include "Engine/TimeFormat.h"
 #include "Engine/display/sprite/Sprite.h"
 #include "Engine/display/text/TextLabel.h"
-#include "Engine/utils/AppUtils.h"
 #include "Engine/display/particles/VisualParticles.h"
 #include "Engine/renderer/font/FontsCache.h"
 #include "Engine/renderer/particles/factory/ParticlesManager.h"
-#include "Engine/renderer/particles/ParticleSystem.h"
+#include "TouchesContainer.h"
 
 bool nsGameTemplate::Init() {
-    _device = nsRenDevice::Shared()->Device();
+    if (!nsBaseGame2DApp::Init()) {
+        return false;
+    }
 
-    _testTri = _device->VerticesCreate(3, 3, false, true);
-    auto verts = _testTri->GetWriteVertices();
-    verts[0].v = nsVec3( 0.0f,  0.6f, 0);
-    verts[1].v = nsVec3(-0.5f, -0.4f, 0);
-    verts[2].v = nsVec3( 0.5f, -0.4f, 0);
-    verts[0].c = 0xff0000ff;
-    verts[1].c = 0xff00ff00;
-    verts[2].c = 0xffff0000;
-    auto indices = _testTri->GetWriteIndices();
-    indices[0] = 0; indices[1] = 1; indices[2] = 2;
-    _testTri->SetValidVertices(3);
-    _testTri->SetValidIndices(3);
+    auto device = GetRenderDevice();
 
-    _stage = new nsVisualContainer2d();
-    auto renState = _device->StateLoad("default/rs/gui_clamp.ggrs");
+    _content = new nsVisualContainer2d();
+    _touches = new nsTouchesContainer();
+    GetStage()->AddChild(_content);
+    GetStage()->AddChild(_touches);
 
-    auto back = _device->TextureLoad("grom-logo.png");
+    auto renState = device->StateLoad("default/rs/gui_clamp.ggrs");
+
+    auto back = device->TextureLoad("grom-logo.png");
     auto sprite = new nsSprite();
     sprite->renState = renState;
     sprite->desc.tex = back;
@@ -49,8 +40,8 @@ bool nsGameTemplate::Init() {
     label->renState = renState;
     label->font = nsFontsCache::Shared()->LoadFont("tests/fonts/bmfont.fnt");
 
-    _stage->AddChild(sprite);
-    _stage->AddChild(label);
+    _content->AddChild(sprite);
+    _content->AddChild(label);
 
     int w, h;
     back->GetSize(w, h);
@@ -68,11 +59,11 @@ bool nsGameTemplate::Init() {
         parts->origin.pos = pos;
         parts->GetSystem().behaviour = particles;
         parts->space = nsVisualParticles::GLOBAL;
-        _stage->AddChild(parts);
+        _content->AddChild(parts);
     }
 
     nsRect  r;
-    label->GetBounds(r, _stage);
+    label->GetBounds(r, _content);
     label->origin.pos = nsVec2(r.width, r.height + w / 1.5f) / -2;
 
     g_inp.ShowCursor(true);
@@ -86,42 +77,26 @@ bool nsGameTemplate::Init() {
 }
 
 void nsGameTemplate::Release() {
-    if (_testTri) {
-        _device->VerticesRelease(_testTri);
-        _testTri = nullptr;
-    }
-    if (_stage) {
-        _stage->Destroy();
-    }
+    _content = nullptr;
+    _touches = nullptr;
+    nsBaseGame2DApp::Release();
 }
 
 void nsGameTemplate::DrawWorld() {
-    _device->ClearScene(CLR_CBUFF | CLR_ZBUFF | CLR_STENCIL);
+    auto device = GetRenderDevice();
+    device->ClearScene(CLR_CBUFF | CLR_ZBUFF | CLR_STENCIL);
 
-    _stage->origin.pos = nsAppUtils::GetClientSize() / 2;
+    int width;
+    int height;
+    GetGUIDimension(width, height);
+    _content->origin.pos = nsVec2(static_cast<float>(width), static_cast<float>(height)) / 2;
 
-    nsVisualSceneRender2d::DrawScene(_stage);
-
-    static float testAngle = 0;
-    testAngle += 0.03f;
-    nsMatrix proj, view, model;
-    proj.Identity();
-    view.Identity();
-    model.Identity();
-    model.RotateZ(testAngle);
-    _device->LoadProjMatrix(proj);
-    _device->LoadViewMartix(view);
-    _device->LoadMatrix(model);
-    _device->VerticesDraw(_testTri);
+    nsBaseGame2DApp::DrawWorld();
 }
 
 void nsGameTemplate::Loop(float frameTime) {
-    _stage->Loop();
-    _stage->origin.angle = _stage->origin.angle + frameTime;
-}
-
-IUserInput *nsGameTemplate::GetUserInput() {
-    return _stage;
+    nsBaseGame2DApp::Loop(frameTime);
+    _content->origin.angle = _content->origin.angle + frameTime;
 }
 
 void nsGameTemplate::OnActivate(bool active) {
@@ -140,11 +115,6 @@ bool nsGameTemplate::InitDialog() {
     return true;
 }
 
-
-void nsGameTemplate::GetGUIDimension(int &width, int &height) {
-    App_GetPlatform()->GetClientSize(width, height);
-}
-
 const char *nsGameTemplate::GetVersionInfo() {
     return "Template 1.0.0";
 }
@@ -154,4 +124,3 @@ static nsGameTemplate g_game;
 IGameApp*	App_GetGame() {
     return &g_game;
 }
-
