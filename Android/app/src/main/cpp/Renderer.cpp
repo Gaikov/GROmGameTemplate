@@ -125,8 +125,8 @@ void Renderer::handleInput() {
             }
 
             case AMOTION_EVENT_ACTION_CANCEL:
-                for (const auto &[pointerId, position] : _activePointers) {
-                    nsEngine::OnPointerUp(pointerId, position.first, position.second);
+                for (const auto &pointer : _activePointers) {
+                    nsEngine::OnPointerCancel(pointer.first);
                 }
                 _activePointers.clear();
                 break;
