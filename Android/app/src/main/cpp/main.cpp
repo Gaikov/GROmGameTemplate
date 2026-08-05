@@ -14,6 +14,14 @@
 #include <memory>
 
 namespace {
+struct AndroidProcessState {
+    bool logInitialized = false;
+    bool platformInitialized = false;
+    bool engineInitialized = false;
+};
+
+AndroidProcessState g_process;
+
 class ScopedJniEnv {
 public:
     explicit ScopedJniEnv(JavaVM *vm) : _vm(vm) {
@@ -45,10 +53,7 @@ class AndroidRuntime {
 public:
     explicit AndroidRuntime(android_app *app)
             : _app(app),
-              _platform(dynamic_cast<AndroidPlatform *>(App_GetPlatform())) {
-        _platform->_activity = new JavaObject(
-                _app->activity->javaGameActivity, _app->activity->vm);
-    }
+              _platform(dynamic_cast<AndroidPlatform *>(App_GetPlatform())) {}
 
     ~AndroidRuntime() {
         Shutdown();
@@ -72,16 +77,6 @@ public:
             case APP_CMD_PAUSE:
             case APP_CMD_STOP:
                 _resumed = false;
-                UpdateActivation();
-                break;
-
-            case APP_CMD_GAINED_FOCUS:
-                _focused = true;
-                UpdateActivation();
-                break;
-
-            case APP_CMD_LOST_FOCUS:
-                _focused = false;
                 UpdateActivation();
                 break;
 
@@ -121,52 +116,58 @@ public:
         _shutdown = true;
 
         SetActive(false);
-        if (_engineInitialized) {
-            nsEngine::Release(false);
-            _engineInitialized = false;
-        }
         _renderer.reset();
+        _platform->_activity = nullptr;
     }
 
 private:
+    void AttachActivity() {
+        _platform->_activity = new JavaObject(
+                _app->activity->javaGameActivity, _app->activity->vm);
+    }
+
     void CreateRenderer() {
         if (!_app->window || _renderer) {
             return;
         }
 
+        AttachActivity();
         auto renderer = std::make_unique<Renderer>(_app);
         if (!renderer->IsInitialized()) {
+            _platform->_activity = nullptr;
             return;
         }
         _renderer = std::move(renderer);
 
-        if (!_engineInitialized) {
+        if (!g_process.engineInitialized) {
             if (!nsEngine::Init()) {
                 Log::Error("Failed to initialize GROm Engine");
                 _renderer.reset();
+                _platform->_activity = nullptr;
                 return;
             }
-            _engineInitialized = true;
-            _active = _resumed && _focused;
-        } else {
-            UpdateActivation();
+            g_process.engineInitialized = true;
+            _activationKnown = false;
         }
+        UpdateActivation();
     }
 
     void DestroyRenderer() {
         SetActive(false);
         _renderer.reset();
+        _platform->_activity = nullptr;
     }
 
     void UpdateActivation() {
-        SetActive(_engineInitialized && _renderer && _resumed && _focused);
+        SetActive(g_process.engineInitialized && _renderer && _resumed);
     }
 
     void SetActive(bool active) {
-        if (!_engineInitialized || _active == active) {
+        if (!g_process.engineInitialized || (_activationKnown && _active == active)) {
             return;
         }
         _active = active;
+        _activationKnown = true;
         nsEngine::OnActivateApp(active);
     }
 
@@ -174,10 +175,9 @@ private:
     android_app *_app;
     AndroidPlatform *_platform;
     std::unique_ptr<Renderer> _renderer;
-    bool _engineInitialized = false;
     bool _resumed = false;
-    bool _focused = false;
     bool _active = false;
+    bool _activationKnown = false;
     bool _shutdown = false;
 };
 
@@ -199,21 +199,32 @@ static AndroidLogPolicy g_logPolicy;
 
 extern "C" {
 void android_main(struct android_app *pApp) {
-    Log::Init();
-    Log::Shared()->AddPolicy(&g_logPolicy);
+    if (!g_process.logInitialized) {
+        Log::Init();
+        Log::Shared()->AddPolicy(&g_logPolicy);
+        g_process.logInitialized = true;
+    }
+
     ScopedJniEnv jniEnv(pApp->activity->vm);
     if (!jniEnv.Get()) {
         Log::Error("Failed to attach the Android render thread to the JVM");
-        Log::Release();
         return;
     }
 
-    AndroidPlatform::Create(jniEnv.Get(),
-                            pApp->activity->vm,
-                            pApp->activity->assetManager,
-                            pApp->activity->internalDataPath);
+    if (!g_process.platformInitialized) {
+        if (!AndroidPlatform::Create(jniEnv.Get(),
+                                     pApp->activity->vm,
+                                     pApp->activity->assetManager,
+                                     pApp->activity->internalDataPath)) {
+            Log::Error("Failed to initialize Android platform");
+            return;
+        }
+        g_process.platformInitialized = true;
+    }
 
-    if (!SwappyGL_init(jniEnv.Get(), pApp->activity->javaGameActivity)) {
+    const bool swappyInitialized =
+            SwappyGL_init(jniEnv.Get(), pApp->activity->javaGameActivity);
+    if (!swappyInitialized) {
         Log::Warning("Swappy failed to initialize; using EGL buffer swaps");
     }
 
@@ -247,8 +258,8 @@ void android_main(struct android_app *pApp) {
 
     runtime.Shutdown();
     pApp->userData = nullptr;
-    SwappyGL_destroy();
-    AndroidPlatform::Destroy();
-    Log::Release();
+    if (swappyInitialized) {
+        SwappyGL_destroy();
+    }
 }
 }
