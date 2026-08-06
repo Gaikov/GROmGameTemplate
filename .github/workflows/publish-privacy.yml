@@ -50,10 +50,22 @@ jobs:
           fi
 
           app_name=$(jq -er '.appName | select(type == "string" and length > 0)' "$config")
+          repository=$(jq -er '.publisherRepository | select(type == "string" and length > 0)' "$config")
+          branch=$(jq -er '.publisherBranch | select(type == "string" and length > 0)' "$config")
           target_path=$(jq -er '.targetPath | select(type == "string" and length > 0)' "$config")
 
           if [[ "$app_name" == *$'\n'* || "$app_name" == *$'\r'* ]]; then
             echo "privacy-policy.json: appName must be a single line" >&2
+            exit 1
+          fi
+
+          if [[ ! "$repository" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]]; then
+            echo "privacy-policy.json: invalid publisherRepository: $repository" >&2
+            exit 1
+          fi
+
+          if ! git check-ref-format --branch "$branch" >/dev/null 2>&1; then
+            echo "privacy-policy.json: invalid publisherBranch: $branch" >&2
             exit 1
           fi
 
@@ -78,6 +90,8 @@ jobs:
           fi
 
           echo "app_name=$app_name" >> "$GITHUB_OUTPUT"
+          echo "repository=$repository" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
           echo "target_path=$target_path" >> "$GITHUB_OUTPUT"
 
       - name: Check publishing credential
@@ -91,20 +105,21 @@ jobs:
             exit 1
           fi
 
-      - name: Check out privacy mirror
+      - name: Check out privacy site
         if: steps.policy.outputs.enabled == 'true'
         uses: actions/checkout@v4
         with:
-          repository: Gaikov/GROmPrivacy
-          ref: master
+          repository: ${{ steps.policy.outputs.repository }}
+          ref: ${{ steps.policy.outputs.branch }}
           token: ${{ secrets.PRIVACY_PUBLISH_TOKEN }}
           path: .privacy-site
           fetch-depth: 0
 
-      - name: Publish policy to mirror
+      - name: Publish policy
         if: steps.policy.outputs.enabled == 'true'
         env:
           APP_NAME: ${{ steps.policy.outputs.app_name }}
+          PUBLISH_BRANCH: ${{ steps.policy.outputs.branch }}
           TARGET_PATH: ${{ steps.policy.outputs.target_path }}
         shell: bash
         run: |
@@ -119,8 +134,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           for attempt in 1 2 3 4 5; do
-            git fetch origin master
-            git reset --hard origin/master
+            git fetch origin "$PUBLISH_BRANCH"
+            git reset --hard "origin/$PUBLISH_BRANCH"
 
             mkdir -p "$(dirname "$destination")"
             install -m 0644 "$source_file" "$destination"
@@ -132,7 +147,7 @@ jobs:
             fi
 
             git commit -m "Update $APP_NAME privacy policy"
-            if git push origin HEAD:master; then
+            if git push origin "HEAD:$PUBLISH_BRANCH"; then
               exit 0
             fi
 

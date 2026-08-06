@@ -247,30 +247,23 @@ The WASM scripts currently produce a Release build by default.
 
 ## Privacy Policy Publishing
 
-The template keeps the policy source in `Materials/Publish/PrivacyPolicy.html` and can publish it to
-the shared GROm Games policy site through `.github/workflows/publish-privacy.yml`.
+The template keeps an editable policy in `Materials/Publish/PrivacyPolicy.html`. Replace every
+placeholder and review the text against the game's actual data usage, permissions, third-party
+services, audience, and applicable legal requirements.
 
-Before enabling publishing for a derived game:
+The optional `.github/workflows/publish-privacy.yml` workflow copies the policy into another GitHub
+repository whose `public/` directory is deployed by a static hosting provider. Configure
+`Materials/Publish/privacy-policy.json` for each derived game:
 
-1. Replace all placeholder text in `PrivacyPolicy.html` with an accurate policy for the game.
-2. Edit `Materials/Publish/privacy-policy.json`:
-   - set `appName` to the exact public game name;
-   - set `targetPath` to `policies/<game-name>/policy.html` using lowercase letters, digits, and
-     hyphens;
-   - set `enabled` to `true`.
-3. Create a fine-grained GitHub personal access token with `Contents: Read and write` permission for
-   only the private `Gaikov/GROmPrivacy` repository.
-4. Add the token to the game repository as the Actions secret `PRIVACY_PUBLISH_TOKEN`.
+- `appName`: exact public name of the game;
+- `publisherRepository`: destination repository in `owner/repository` form;
+- `publisherBranch`: destination branch;
+- `targetPath`: unique path under the destination repository's `public/` directory;
+- `enabled`: set to `true` after the policy and publishing settings are ready.
 
-Repository secrets are not copied when a new repository is created from a template, so step 4 is
-required for every game. Never commit the token to the repository.
+Add a repository secret named `PRIVACY_PUBLISH_TOKEN` containing a fine-grained token with write
+access only to the selected destination repository. Repository secrets are not copied when a new
+repository is created from this template. Never commit credentials or access tokens.
 
-The workflow runs after policy-related pushes to `master` and can also be started manually. It
-publishes the policy to:
-
-```text
-https://grom-games-privacy.pages.dev/<targetPath>
-```
-
-Cloudflare Pages deploys the central mirror through GitHub integration. Wrangler login and global
-Wrangler credentials are not used by this workflow.
+Deploy the destination repository's `public/` directory with any static hosting provider and submit
+the resulting stable public HTTPS URL to the relevant app stores.

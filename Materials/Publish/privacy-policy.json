@@ -1,5 +1,7 @@
 {
   "enabled": false,
   "appName": "Replace With Game Name",
+  "publisherRepository": "owner/privacy-policy-site",
+  "publisherBranch": "master",
   "targetPath": "policies/replace-with-game-name/policy.html"
 }
