@@ -1,0 +1,143 @@
+name: Publish privacy policy
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - Materials/Publish/PrivacyPolicy.html
+      - Materials/Publish/privacy-policy.json
+      - .github/workflows/publish-privacy.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-privacy-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out game repository
+        uses: actions/checkout@v4
+
+      - name: Validate privacy policy
+        id: policy
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          config="Materials/Publish/privacy-policy.json"
+          policy="Materials/Publish/PrivacyPolicy.html"
+
+          test -f "$config"
+          test -f "$policy"
+
+          enabled=$(jq -r '.enabled' "$config")
+          if [[ "$enabled" != "true" && "$enabled" != "false" ]]; then
+            echo "privacy-policy.json: enabled must be a boolean" >&2
+            exit 1
+          fi
+
+          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
+          if [[ "$enabled" != "true" ]]; then
+            echo "Privacy policy publishing is disabled."
+            exit 0
+          fi
+
+          app_name=$(jq -er '.appName | select(type == "string" and length > 0)' "$config")
+          target_path=$(jq -er '.targetPath | select(type == "string" and length > 0)' "$config")
+
+          if [[ "$app_name" == *$'\n'* || "$app_name" == *$'\r'* ]]; then
+            echo "privacy-policy.json: appName must be a single line" >&2
+            exit 1
+          fi
+
+          if [[ ! "$target_path" =~ ^policies/[a-z0-9]+(-[a-z0-9]+)*/policy\.html$ ]]; then
+            echo "privacy-policy.json: invalid targetPath: $target_path" >&2
+            exit 1
+          fi
+
+          size=$(wc -c < "$policy")
+          if (( size == 0 || size > 1048576 )); then
+            echo "Privacy policy must be between 1 byte and 1 MiB" >&2
+            exit 1
+          fi
+
+          grep -Eiq '<html([[:space:]>])' "$policy"
+          grep -Fqi 'Privacy Policy' "$policy"
+          grep -Fqi "$app_name" "$policy"
+
+          if grep -Eiq '<script([[:space:]>])' "$policy"; then
+            echo "Privacy policy must not require JavaScript" >&2
+            exit 1
+          fi
+
+          echo "app_name=$app_name" >> "$GITHUB_OUTPUT"
+          echo "target_path=$target_path" >> "$GITHUB_OUTPUT"
+
+      - name: Check publishing credential
+        if: steps.policy.outputs.enabled == 'true'
+        env:
+          PRIVACY_PUBLISH_TOKEN: ${{ secrets.PRIVACY_PUBLISH_TOKEN }}
+        shell: bash
+        run: |
+          if [[ -z "$PRIVACY_PUBLISH_TOKEN" ]]; then
+            echo "Repository secret PRIVACY_PUBLISH_TOKEN is not configured" >&2
+            exit 1
+          fi
+
+      - name: Check out privacy mirror
+        if: steps.policy.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: Gaikov/GROmPrivacy
+          ref: master
+          token: ${{ secrets.PRIVACY_PUBLISH_TOKEN }}
+          path: .privacy-site
+          fetch-depth: 0
+
+      - name: Publish policy to mirror
+        if: steps.policy.outputs.enabled == 'true'
+        env:
+          APP_NAME: ${{ steps.policy.outputs.app_name }}
+          TARGET_PATH: ${{ steps.policy.outputs.target_path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          source_file="$GITHUB_WORKSPACE/Materials/Publish/PrivacyPolicy.html"
+          site_dir="$GITHUB_WORKSPACE/.privacy-site"
+          destination="public/$TARGET_PATH"
+
+          cd "$site_dir"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          for attempt in 1 2 3 4 5; do
+            git fetch origin master
+            git reset --hard origin/master
+
+            mkdir -p "$(dirname "$destination")"
+            install -m 0644 "$source_file" "$destination"
+            git add -- "$destination"
+
+            if git diff --cached --quiet; then
+              echo "$APP_NAME privacy policy is already up to date."
+              exit 0
+            fi
+
+            git commit -m "Update $APP_NAME privacy policy"
+            if git push origin HEAD:master; then
+              exit 0
+            fi
+
+            sleep $((attempt * 2))
+          done
+
+          echo "Unable to publish privacy policy after 5 attempts" >&2
+          exit 1
