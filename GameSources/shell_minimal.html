@@ -118,6 +118,17 @@
   let nsEngine_OnKeyDown = null;
   let nsEngine_OnKeyUp = null;
   let nsEngine_OnCharDown = null;
+  let engineReady = false;
+  let appActive = null;
+
+  function setAppActive(active) {
+    if (!engineReady || !nsEngine_OnActivateApp || appActive === active) {
+      return;
+    }
+
+    appActive = active;
+    nsEngine_OnActivateApp(active);
+  }
 
   const keyCodeMap = {
     Space: 32,
@@ -278,10 +289,8 @@
       nsEngine_OnKeyDown = Module.cwrap("nsEngine_OnKeyDown", "void", ["number", "boolean", "number"]);
       nsEngine_OnKeyUp = Module.cwrap("nsEngine_OnKeyUp", "void", ["number", "number"]);
       nsEngine_OnCharDown = Module.cwrap("nsEngine_OnCharDown", "void", ["number"]);
-
-      focusCanvas();
     },
-    preMainLoop: checkResize,
+    preMainLoop: beforeMainLoop,
     canvas: canvasElement,
   };
 
@@ -302,6 +311,16 @@
       resizePending = false;
       currentPixelRatio = pixelRatio;
       onResize();
+    }
+  }
+
+  function beforeMainLoop() {
+    checkResize();
+
+    if (!engineReady) {
+      engineReady = true;
+      focusCanvas();
+      setAppActive(document.hasFocus());
     }
   }
 
@@ -349,16 +368,12 @@
   window.addEventListener("blur", ()=> {
     console.log("focus out");
     releasePressedKeys();
-    if (nsEngine_OnActivateApp) {
-      nsEngine_OnActivateApp(false);
-    }
+    setAppActive(false);
   });
 
   window.addEventListener("focus", ()=> {
     console.log("focus in");
-    if (nsEngine_OnActivateApp) {
-      nsEngine_OnActivateApp(true);
-    }
+    setAppActive(true);
   });
 
 </script>
