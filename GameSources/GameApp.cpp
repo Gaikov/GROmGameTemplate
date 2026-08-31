@@ -3,6 +3,7 @@
 //
 
 #include "GameApp.h"
+#include "GameVersion.h"
 #include "Engine/SndManager.h"
 #include "Engine/Platform.h"
 #include "Engine/Input.h"
@@ -116,7 +117,7 @@ bool nsGameTemplate::InitDialog() {
 }
 
 const char *nsGameTemplate::GetVersionInfo() {
-    return "Template 1.0.0";
+    return GameVersion::Display;
 }
 
 static nsGameTemplate g_game;

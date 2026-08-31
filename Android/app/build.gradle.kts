@@ -5,6 +5,26 @@ plugins {
     alias(libs.plugins.androidApplication)
 }
 
+val gameVersionFile = rootProject.file("../GameVersion.properties")
+require(gameVersionFile.isFile) {
+    "Game version file not found: ${gameVersionFile.absolutePath}"
+}
+
+val gameVersionProperties = Properties().apply {
+    gameVersionFile.inputStream().use(::load)
+}
+
+val gameVersionName = gameVersionProperties.getProperty("versionName")
+    ?.trim()
+    ?.takeIf { Regex("""[0-9A-Za-z][0-9A-Za-z._+-]*""").matches(it) }
+    ?: error("Invalid or missing versionName in ${gameVersionFile.absolutePath}")
+
+val gameVersionCode = gameVersionProperties.getProperty("versionCode")
+    ?.trim()
+    ?.toIntOrNull()
+    ?.takeIf { it in 1..2_100_000_000 }
+    ?: error("Invalid or missing versionCode in ${gameVersionFile.absolutePath}; expected 1..2100000000")
+
 val keystoreProperties = Properties().apply {
     val propertiesFile = rootProject.file("keystore.properties")
     if (propertiesFile.isFile) {
@@ -75,8 +95,8 @@ android {
         applicationId = "com.grom.template"
         minSdk = 23
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0.beta.1"
+        versionCode = gameVersionCode
+        versionName = gameVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {

@@ -3,6 +3,8 @@ project(GROmGameTemplate)
 
 message(STATUS "Hello from GROm!")
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/GROmEngine/cmake/GameVersion.cmake")
+
 if (WEB_ASM)
     set(GAME_MODULE_NAME index)
 else()
@@ -36,6 +38,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL Android)
 endif ()
 
 add_subdirectory(GameSources)
+
+grom_configure_game_version(
+        TARGET ${GAME_MODULE_NAME}
+        PROPERTIES_FILE "${CMAKE_CURRENT_SOURCE_DIR}/GameVersion.properties"
+        PRODUCT_NAME "Template"
+)
 
 add_dependencies(${GAME_MODULE_NAME} Engine)
 
