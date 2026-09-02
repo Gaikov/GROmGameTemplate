@@ -24,6 +24,8 @@ public class MainActivity extends GameActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Keep this compatibility wrapper for edge-to-edge support on Android 14 and below.
+        // Google Play may attribute its internal deprecated system-bar calls to AndroidX.
         WindowCompat.enableEdgeToEdge(getWindow());
         hideSystemUi();
     }
