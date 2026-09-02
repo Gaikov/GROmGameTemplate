@@ -2,6 +2,7 @@ package com.grom.template;
 
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Toast;
@@ -59,6 +60,12 @@ public class MainActivity extends GameActivity {
         if (hasFocus) {
             hideSystemUi();
         }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        hideSystemUi();
     }
 
     private void hideSystemUi() {
