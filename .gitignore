@@ -8,3 +8,4 @@
 /assets/libEGL.dylib
 /assets/libGLESv2.dylib
 .DS_Store
+code.sh
