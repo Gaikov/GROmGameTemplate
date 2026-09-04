@@ -238,15 +238,14 @@ void android_main(struct android_app *pApp) {
     int events;
     android_poll_source *pSource;
     while (!pApp->destroyRequested) {
-        const int timeout = runtime.CanRender() ? 0 : -1;
-        while (ALooper_pollOnce(timeout, nullptr, &events, (void **) &pSource) >= 0) {
+        while (ALooper_pollOnce(runtime.CanRender() ? 0 : -1,
+                                nullptr,
+                                &events,
+                                (void **) &pSource) >= 0) {
             if (pSource) {
                 pSource->process(pApp, pSource);
             }
             if (pApp->destroyRequested) {
-                break;
-            }
-            if (runtime.CanRender()) {
                 break;
             }
         }

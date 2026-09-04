@@ -1,0 +1,15 @@
+$back_cell_size 20.000000
+$back_color 0.141538 0.141538 0.141538 1.000000
+$current_scene "tests/layouts/touch.layout"
+$scene_state
+{
+	$scene "tests/layouts/touch.layout"
+	$x 1043.484863
+	$y 719.188843
+	$zoom 2.629431
+}
+
+$show_project_settings 0
+$test_view 0
+$x_flip 0
+$y_flip 0
